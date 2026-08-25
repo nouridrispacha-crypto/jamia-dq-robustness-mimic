@@ -115,8 +115,9 @@ study) are likewise not included in this repository.
 ## Citation
 
 If you use this code, please cite the manuscript (full citation to be added
-on acceptance) and, if applicable, the archived release of this repository
-(DOI via Zenodo, badge to be added).
+on acceptance) and the archived release of this repository:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22094739.svg)](https://doi.org/10.5281/zenodo.22094739)
 
 ## License
 
