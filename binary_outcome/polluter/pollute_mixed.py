@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-MIXED POLLUTER — SCENARIO S4 (budget-matched multi-dimension degradation)
+MIXED POLLUTER — SCENARIO S2-MD (budget-matched multi-dimension degradation)
 Compatible common_runner (signature: fn(df, density, seed) -> (df, row_idx, col_idx))
 
 PRINCIPE
@@ -315,5 +315,5 @@ def make_mixed_polluter(
     return pollution_mixed
 
 
-# Pollueur principal du scenario S4 (corps de l'article)
+# Pollueur principal du scenario S2-MD (corps de l'article)
 pollution_mixed_uniform = make_mixed_polluter(W_UNIFORM, "P0_uniform")

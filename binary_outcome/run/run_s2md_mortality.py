@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-LANCEMENT DU SCENARIO S4 — OUTCOME MORTALITE (binaire)
+LANCEMENT DU SCENARIO S2-MD — OUTCOME MORTALITE (binaire)
 Arborescence MIE_2026 : ce script vit dans run/
 
-S4 = degradation simultanee des cinq dimensions DQ a budget de corruption
+S2-MD = degradation simultanee des cinq dimensions DQ a budget de corruption
 egal, appliquee au test uniquement (pendant de S2, scenario de deploiement).
 
 Le budget total T balaie la meme grille que les runs mono-dimension, ce qui
-rend S4 directement comparable a S1/S2/S3 au meme niveau c.
+rend S2-MD directement comparable a S1/S2/S3 au meme niveau c.
 
 PROFILS DE COMPOSITION
 ----------------------
@@ -28,10 +28,10 @@ USAGE
 -----
     cd chemin/vers/MIE_2026
 
-    python run/run_s4_mortality.py --smoke                    # 3 replicats, P0
-    python run/run_s4_mortality.py --quick --all              # 50 replicats, 4 profils
-    python run/run_s4_mortality.py --quick -p P3_integration  # 50 replicats, 1 profil
-    python run/run_s4_mortality.py --all                      # 500 replicats, 4 profils
+    python run/run_s2md_mortality.py --smoke                    # 3 replicats, P0
+    python run/run_s2md_mortality.py --quick --all              # 50 replicats, 4 profils
+    python run/run_s2md_mortality.py --quick -p P3_integration  # 50 replicats, 1 profil
+    python run/run_s2md_mortality.py --all                      # 500 replicats, 4 profils
 
 Chaque profil ecrit dans son propre CSV. La reprise est automatique : un profil
 deja calcule a 50 replicats repart a b=50 lorsqu'on relance en mode complet.
@@ -62,7 +62,7 @@ from pollute_mixed import make_mixed_polluter, PROFILES  # noqa: E402
 DATA_FILENAME = "18_variables.csv"
 
 CSV_PATH = ROOT / "data" / DATA_FILENAME
-OUT_DIR = ROOT / "Results" / "S4_mixed"
+OUT_DIR = ROOT / "Results" / "S2MD_mixed"
 
 
 # ============================================================
@@ -72,11 +72,11 @@ OUT_DIR = ROOT / "Results" / "S4_mixed"
 # soient reconnus par la reprise et ne soient pas recalcules.
 
 SCENARIO_NAMES = {
-    "P0_uniform": "S4_mixed_uniform_test",
-    "P1_documentation": "S4_mixed_P1_documentation_test",
-    "P2_saisie": "S4_mixed_P2_saisie_test",
-    "P3_integration": "S4_mixed_P3_integration_test",
-    "P4_observe": "S4_mixed_P4_observe_test",
+    "P0_uniform": "S2MD_mixed_uniform_test",
+    "P1_documentation": "S2MD_mixed_P1_documentation_test",
+    "P2_saisie": "S2MD_mixed_P2_saisie_test",
+    "P3_integration": "S2MD_mixed_P3_integration_test",
+    "P4_observe": "S2MD_mixed_P4_observe_test",
 }
 
 ORDER = ["completeness", "coherence", "validity", "precision", "uniqueness"]
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
     for pname in profiles:
 
-        scenario = f"S4_SMOKE_{pname}" if SMOKE else SCENARIO_NAMES[pname]
+        scenario = f"S2MD_SMOKE_{pname}" if SMOKE else SCENARIO_NAMES[pname]
         weights = PROFILES[pname]
         composition = " / ".join(f"{d[:5]} {weights[d]:.0%}" for d in ORDER)
 
@@ -213,6 +213,6 @@ if __name__ == "__main__":
     print("=" * 70)
     print("Termine. CSV produits :")
     for pname in profiles:
-        name = f"S4_SMOKE_{pname}" if SMOKE else SCENARIO_NAMES[pname]
+        name = f"S2MD_SMOKE_{pname}" if SMOKE else SCENARIO_NAMES[pname]
         print(f"  {OUT_DIR / (name + '.csv')}")
     print("=" * 70)

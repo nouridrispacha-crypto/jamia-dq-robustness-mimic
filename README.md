@@ -28,7 +28,7 @@ Each outcome folder is self-contained and follows the same layout:
 ```
 <outcome>_outcome/
 ├── common_runner.py   # shared pipeline: imputation, corruption, bootstrap .632, model training, metrics
-├── polluter/           # one script per DQ dimension, plus pollute_mixed.py for the multi-dimension scenario (S4, binary only)
+├── polluter/           # one script per DQ dimension, plus pollute_mixed.py for the multi-dimension scenario (S2-MD, binary only)
 └── run/                # one entry-point script per (dimension, scenario) combination
 ```
 
@@ -77,9 +77,9 @@ predictive model to avoid pooling non-independent (model, replicate) pairs.
    diagnostics, Wilcoxon+Holm contrast tables) are written to
    `<outcome>_stats_results/`.
 
-## Scenario S4 (binary outcome only)
+## Scenario S2-MD (binary outcome only)
 
-`binary_outcome/run/run_s4_mortality.py` runs the multi-dimension,
+`binary_outcome/run/run_s2md_mortality.py` runs the multi-dimension,
 budget-matched degradation scenario described in Section 3.6 of the
 manuscript (five weight profiles, including one derived from defect rates
 measured on a real clinical data warehouse). See the script's docstring for

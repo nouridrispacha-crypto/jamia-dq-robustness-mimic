@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Test du pollueur mixte S4 sur une cohorte synthetique de type MIMIC-IV.
+Test du pollueur mixte S2-MD sur une cohorte synthetique de type MIMIC-IV.
 
 A placer dans Polluter/, a cote de pollute_mixed.py.
 
