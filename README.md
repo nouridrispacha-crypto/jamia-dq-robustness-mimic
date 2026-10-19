@@ -119,10 +119,36 @@ study) are likewise not included in this repository.
   development; the manuscript's reported results come from the
   scenario-suffixed scripts. These legacy scripts are kept for transparency
   but are not needed to reproduce the manuscript.
-- File paths in `common_runner.py` and `analyse_stats.py` were adapted for
-  this public repository (relative paths / `DQ_RESULTS_ROOT` environment
+- File paths in `common_runner.py` and `analysis/analyse_stats.py` were adapted
+  for this public repository (relative paths / the `DQ_RESULTS_ROOT` environment
   variable) from the absolute paths used on the development machine; no
-  computational logic was changed.
+  computational logic was changed. The scripts under `figures/` and
+  `standardisation/`, added in v2.0.0, still carry those absolute paths: running
+  them elsewhere means editing the `PAPER = Path(...)` line at the top of each.
+  They were left as they ran, so that the published figures and the archived code
+  are the same code.
+
+## Figures and tables
+
+| script | output |
+| --- | --- |
+| `figures/figure1_protocol.py` | Figure 1 |
+| `figures/make_s2md_schema.py` | Figure 2 (schematic) |
+| `figures/make_print_figures.py` | Figures 2 and 5, Supplementary Figures 1 to 4 |
+| `figures/make_supp_heatmaps.py` | Figure 3, Supplementary Figures 6 and 7 |
+| `figures/make_s2_grid.py` | Figure 4, Supplementary Figures 2 and 3 grids |
+| `figures/make_contrast_figure.py` | Supplementary Figures 8 to 10 |
+| `figures/make_contrast_table.py` | Table 3 |
+| `figures/make_resid_figures.py` | Supplementary Figure 5 |
+| `analysis/analyse_stats_v2.py` | mixed models, contrasts, Tables 3, S5 and S6 |
+| `analysis/compute_severity_table_S8.py` | Supplementary Table S8 |
+
+The binary arm was re-run with the predictors standardised, because its
+preprocessor passed them through where the continuous and survival arms already
+scaled them. Clean AUROC moves from 0.7444 to 0.8224 for the MLP and by -0.002
+for LASSO; the tree models are invariant to a per-column affine map. Every binary
+figure, table and statistic in the manuscript comes from that arm, produced by
+the scripts under `standardisation/`. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Citation
 
