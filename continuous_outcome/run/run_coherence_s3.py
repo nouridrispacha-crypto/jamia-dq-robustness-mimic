@@ -10,7 +10,7 @@ sys.path.insert(0, str(POLLUTER_DIR))
 
 
 from common_runner import run_scenario
-from Polluter.coherence_polluter import pollution_coherence
+from polluter.coherence_polluter import pollution_coherence
 
 CSV = str(ROOT_DIR / "data" / "18_variables_reg.csv")
 OUT = ROOT_DIR / "Results" / "Coherence" /"outputs_coherence_s3"

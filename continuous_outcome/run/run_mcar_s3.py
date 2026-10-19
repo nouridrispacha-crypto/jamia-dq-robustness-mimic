@@ -6,7 +6,7 @@ ROOT_DIR = THIS_DIR.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from common_runner import run_scenario
-from Polluter.pollute_mcar import pollution_mcar
+from polluter.pollute_mcar import pollution_mcar
 
 CSV = str(ROOT_DIR / "data" / "18_variables_reg.csv")
 OUT = ROOT_DIR /"Results" / "mcar" / "outputs_mcar_S3"

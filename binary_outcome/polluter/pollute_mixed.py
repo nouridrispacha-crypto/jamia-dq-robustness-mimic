@@ -41,7 +41,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-# Le dossier Polluter/ est ajoute au chemin d'import : les cinq pollueurs
+# Le dossier polluter/ est ajoute au chemin d'import : les cinq pollueurs
 # sont ainsi trouves quel que soit le dossier depuis lequel le script est lance.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
@@ -78,44 +78,32 @@ _SEED_OFFSET = {
     "uniqueness": 505,
 }
 
-# Profil principal (corps de l'article) : budget egal.
-W_UNIFORM: Dict[str, float] = {d: 0.20 for d in DIMENSIONS}
 
-# Profils stylises (materiel supplementaire).
-W_DOCUMENTATION: Dict[str, float] = {
-    "completeness": 0.45,
-    "coherence": 0.10,
-    "validity": 0.15,
-    "precision": 0.20,
-    "uniqueness": 0.10,
-}
 
-W_SAISIE: Dict[str, float] = {
-    "completeness": 0.10,
-    "coherence": 0.30,
-    "validity": 0.20,
-    "precision": 0.35,
-    "uniqueness": 0.05,
-}
 
-W_INTEGRATION: Dict[str, float] = {
-    "completeness": 0.15,
-    "coherence": 0.10,
-    "validity": 0.30,
-    "precision": 0.05,
-    "uniqueness": 0.40,
-}
 
 # Profil OBSERVE : pondere par les taux de defaut reellement mesures sur
 # l entrepot eHOP du CHU d Angers, cohorte de reanimation adulte,
 # janvier 2024 a mai 2026, 5 192 sejours.
 #
-#   dimension      taux mesure    poids normalise
+#   dimension      taux mesure    poids retenu
 #   completude        15 %            68,5 %
 #   precision          2,8 %          12,8 %
 #   unicite            2,0 %           9,1 %
 #   coherence          1,9 %           8,7 %
-#   validite           0,03 %          0,9 %
+#   validite           0,03 %          0,9 %   <- plancher, cf. ci-dessous
+#
+# ATTENTION : les poids ne sont PAS une simple normalisation des taux.
+# La part proportionnelle de la validite serait 0,03/21,73 = 0,14 %, ce
+# qui ne laisserait qu environ 5 lignes dans sa strate a N=3500. Elle est
+# donc plancheee a 0,9 %, et les quatre autres dimensions sont
+# normalisees sur les 99,1 % restants :
+#   completude 99,1 x 15/21,7   = 68,50 %
+#   precision  99,1 x 2,8/21,7  = 12,79 %
+#   unicite    99,1 x 2,0/21,7  =  9,13 %
+#   coherence  99,1 x 1,9/21,7  =  8,68 %
+# La validite est donc legerement sur-representee par rapport a son taux
+# mesure.
 #
 # La validite est residuelle mais non nulle : les donnees ont franchi la
 # couche de controle a l integration, qui rejette les valeurs non
@@ -131,10 +119,6 @@ W_OBSERVE: Dict[str, float] = {
 }
 
 PROFILES: Dict[str, Dict[str, float]] = {
-    "P0_uniform": W_UNIFORM,
-    "P1_documentation": W_DOCUMENTATION,
-    "P2_saisie": W_SAISIE,
-    "P3_integration": W_INTEGRATION,
     "P4_observe": W_OBSERVE,
 }
 
@@ -215,7 +199,7 @@ def _split_rows(
 
 def make_mixed_polluter(
     weights: Optional[Dict[str, float]] = None,
-    profile_name: str = "P0_uniform",
+    profile_name: str = "P4_observe",
     verbose: bool = False,
 ):
     """
@@ -225,7 +209,7 @@ def make_mixed_polluter(
               Par defaut : budget egal (0.20 chacun).
     """
     if weights is None:
-        weights = W_UNIFORM
+        weights = W_OBSERVE
 
     missing = [d for d in weights if d not in DIMENSIONS]
     if missing:
@@ -315,5 +299,3 @@ def make_mixed_polluter(
     return pollution_mixed
 
 
-# Pollueur principal du scenario S2-MD (corps de l'article)
-pollution_mixed_uniform = make_mixed_polluter(W_UNIFORM, "P0_uniform")

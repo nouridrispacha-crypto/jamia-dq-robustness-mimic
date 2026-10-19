@@ -58,11 +58,12 @@ def apply_validity_pollution(
     weights: Optional[Dict[str, float]] = None,
 ) -> Tuple[pd.DataFrame, np.ndarray, np.ndarray]:
     """
-    Corrompt une fraction p EXACTE des cellules numériques (NUM_COLS).
+    Corrompt une fraction p EXACTE des cellules prédictrices : NUM_COLS, plus
+    la colonne catégorielle gender lorsqu'elle est présente (binaire, survie).
 
     - typing    : valeurs non numériques
     - bool_ood  : valeurs invalides pour 0/1
-    - cat_ood   : appliqué hors budget (gender)
+    - cat_ood   : catégorie invalide pour gender, dans le budget
 
     Retour:
         df_polluted, row_idx, col_idx
@@ -86,7 +87,7 @@ def apply_validity_pollution(
     # ========================================================
 
     polluable_cells: List[Tuple[int, str]] = [
-        (r, c) for r in range(n_rows) for c in num_cols
+        (r, c) for r in range(n_rows) for c in num_cols + cat_cols
     ]
 
     total_cells = len(polluable_cells)
@@ -120,8 +121,12 @@ def apply_validity_pollution(
 
     for (r, c), t in zip(chosen_cells, assigned):
 
+        # ---------- CAT OOD (gender, dans le budget) ----------
+        if c in cat_cols:
+            Xp.at[r, c] = GENDER_OOD[rng.integers(0, len(GENDER_OOD))]
+
         # ---------- TYPING ----------
-        if t == "typing":
+        elif t == "typing":
             Xp.at[r, c] = TYPING_REPLS[rng.integers(0, len(TYPING_REPLS))]
 
         # ---------- BOOL OOD ----------
@@ -134,18 +139,6 @@ def apply_validity_pollution(
 
         row_idx.append(r)
         col_idx.append(Xp.columns.get_loc(c))
-
-    # ========================================================
-    # CAT OOD (HORS BUDGET)
-    # ========================================================
-
-    if cat_cols:
-        n_cat = int(0.05 * n_rows)  # faible et stable
-        if n_cat > 0:
-            rows_cat = rng.choice(n_rows, size=n_cat, replace=False)
-            for r in rows_cat:
-                for c in cat_cols:
-                    Xp.at[r, c] = GENDER_OOD[rng.integers(0, len(GENDER_OOD))]
 
     return Xp, np.array(row_idx), np.array(col_idx)
 

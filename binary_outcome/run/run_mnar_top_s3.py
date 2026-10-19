@@ -11,7 +11,7 @@ sys.path.insert(0, str(POLLUTER_DIR))
 
 from common_runner import run_scenario
 
-from Polluter.pollute_mnar_top import pollution_mnar_top
+from polluter.pollute_mnar_top import pollution_mnar_top
 
 CSV = str(ROOT_DIR / "data" / "18_variables.csv")
 OUT = ROOT_DIR /"Results" / "mnar_top"/ "outputs_mnar_top_s3"

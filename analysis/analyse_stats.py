@@ -1,45 +1,36 @@
 # -*- coding: utf-8 -*-
 """
-Analyse statistique revisee -- reconstruction de analyse_stats.py (introuvable
-sur disque, jamais commite). Specification reconstituee et verifiee par le
-compte exact d'observations/effets fixes donne par l'utilisateur (outcome
-binaire) :
+Statistical analysis for the manuscript (Statistical analysis section).
 
-  perte ~ dimension*model + level + dimension:level + (1|replicate)
+Paired loss
+  For each bootstrap replicate and model, the loss is the performance drop
+  relative to that replicate's uncorrupted run (c = 0), signed so that positive
+  means worse. At c = 0 every dimension shares the same value, so only the
+  corrupted levels (0.1, 0.2, 0.3) enter the analysis.
 
-- Ajuste sur la PERTE intra-replicat (degradation appariee par rapport a
-  c=0 pour le meme replicat et le meme modele), pas sur la valeur brute.
-  A c=0 les 5 dimensions partagent exactement la meme valeur pour un
-  replicat donne (aucune corruption n'est appliquee) : les inclure comme
-  5 lignes distinctes gonflerait artificiellement l'effectif et, ajuste sur
-  la valeur brute, l'intercept aleatoire s'estime a zero (le modele degenere
-  en OLS). Le modele est donc ajuste UNIQUEMENT sur les niveaux 0.1-0.5.
-- dimension : reference = precision (dimension la moins dommageable dans
-  toutes les analyses descriptives -> reference naturelle).
-- Groupes (effet aleatoire) : replicat bootstrap (b) SEUL.
-- Contrastes : differences appariees a c=0.5 entre les 10 paires de
-  dimensions (C(5,2)), test de Wilcoxon signe, correction de Holm sur les
-  10 paires de chaque combinaison outcome x scenario x metrique. La perte
-  est d'abord MOYENNEE SUR LES MODELES pour chaque replicat avant
-  appariement : les modeles partagent le meme split in-bag/OOB pour un
-  replicat donne (bootstrap_inbag_oob est seede par b seul, independamment
-  du modele), donc traiter (modele, replicat) comme des paires
-  independantes reintroduirait la pseudo-replication que la construction
-  de la perte visait justement a eliminer. Les 500 replicats restent
-  l'unique unite reellement independante, cohente avec (1|replicate).
+Pairwise contrasts (the inference reported in the manuscript)
+  At c = 0.3 and for each model separately, a Wilcoxon signed-rank test on the
+  paired loss differences for each of the 10 dimension pairs, across the 500
+  replicates, with Holm correction within each family of 10 pairs (outcome x
+  scenario x metric x model). A contrast is reported as reliably separable
+  when its Holm-adjusted p < 0.05 and the 2.5th-97.5th percentile interval of
+  the paired differences excludes zero.
 
-Verification de la reconstruction (outcome binaire, exemple donne par
-l'utilisateur, 5 modeles) : 5 dimensions x 5 modeles x 5 niveaux (0.1-0.5)
-x 500 replicats = 62 500 observations ; 4 (dimension) + 4 (model) + 16
-(dimension:model) + 4 (level) + 16 (dimension:level) = 45 effets fixes.
-Les deux correspondent exactement aux chiffres donnes -> specification
-consideree comme correctement reconstituee.
+Mixed-effects model (diagnostic only)
+  loss ~ dimension*model + level + dimension:level + (1|replicate), fit on the
+  corrupted levels with precision as reference dimension and c = 0.1 as
+  reference level. Binary outcome: 5 dimensions x 5 models x 3 levels x 500
+  replicates = 37 500 observations.
+
+The corruption grid stops at 0.3 because the coherence mechanism, confined to
+clinically linked variables, reaches at most about 35% of predictor cells.
 
 USAGE
 -----
-Modifier OUTCOME et SCENARIO en bas du fichier, ou appeler run_metric()
-directement avec une config personnalisee. Trois configs pretes a l'emploi
-sont definies ci-dessous : BINARY, CONTINUOUS, SURVIVAL.
+Set DQ_RESULTS_ROOT to the folder holding the binary_outcome/,
+continuous_outcome/ and survival_outcome/ result trees, then run this file.
+Results must be complete (500 replicates per dimension x scenario): run_metric
+prints a warning when the number of observations falls short.
 """
 
 from __future__ import annotations
@@ -67,7 +58,7 @@ except ImportError:
 warnings.filterwarnings("ignore")
 
 REFERENCE_DIMENSION = "precision"
-LEVELS = [0.1, 0.2, 0.3, 0.4, 0.5]
+LEVELS = [0.1, 0.2, 0.3]
 REFERENCE_LEVEL = "0.1"
 
 # MODIFIÉ (dépôt public) — les CSV de résultats (Results/) ne sont pas
@@ -211,11 +202,6 @@ BINARY = OutcomeConfig(
     level_col="pollution",  # colonne de niveau nommee differemment dans ce runner
 )
 
-# NOTE : n_fixed=3500 seulement -- a n'utiliser que lorsque les reruns
-# StandardScaler seront a 500/500 sur les 15 combinaisons (dimension x
-# scenario). Statut au moment de l'ecriture de ce script : incomplet
-# (profondeurs heterogenes, voir conversation). NE PAS LANCER sur ICIMTH
-# tant que ce n'est pas confirme complet.
 CONTINUOUS = OutcomeConfig(
     name="continuous",
     n_fixed=3500,
@@ -243,7 +229,7 @@ def load_dimension(cfg: OutcomeConfig, dim: str, scenario: str) -> pd.DataFrame:
 def build_loss_table(cfg: OutcomeConfig, scenario: str, metric_col: str, direction: str) -> pd.DataFrame:
     """
     Table longue [dimension, model, level, replicate, loss], restreinte a
-    p in {0.1,...,0.5}. loss est positif quand la performance se degrade,
+    p in {0.1, 0.2, 0.3}. loss est positif quand la performance se degrade,
     quel que soit le sens naturel de la metrique.
     """
     rows = []
@@ -352,7 +338,7 @@ def residual_diagnostics(result, cfg_name: str, scenario: str, metric_name: str,
 
 
 # ============================================================
-# CONTRASTES -- Wilcoxon signe + Holm, a c=0.5, sur les 10 paires
+# CONTRASTES -- Wilcoxon signe + Holm, a c=0.3, sur les 10 paires
 # ============================================================
 
 def holm_correction(pvals: list[float]) -> list[float]:
@@ -391,7 +377,7 @@ def pairwise_contrasts(cfg: OutcomeConfig, loss_df: pd.DataFrame) -> pd.DataFram
     comparaisons reste "10 paires pour une analyse donnee", desormais
     outcome x scenario x metrique x modele plutot que sans le modele).
     """
-    c5 = loss_df[loss_df["level"] == "0.5"].copy()
+    c5 = loss_df[loss_df["level"] == "0.3"].copy()
     dims = list(cfg.file_map.keys())
 
     all_rows = []
@@ -401,10 +387,9 @@ def pairwise_contrasts(cfg: OutcomeConfig, loss_df: pd.DataFrame) -> pd.DataFram
 
         rows = []
         for d1, d2 in combinations(dims, 2):
-            # PROVISOIRE (donnees incompletes, ex. ICIMTH en cours) : une
-            # dimension peut n'avoir encore aucune ligne a c=0.5 pour ce
-            # modele -- on saute la paire plutot que de planter, et on le
-            # signale via n_pairs=0 au lieu de laisser une KeyError.
+            # With incomplete results a dimension may have no row at the
+            # contrast level for this model: the pair is reported with
+            # n_pairs=0 instead of raising a KeyError.
             if d1 not in pivot.columns or d2 not in pivot.columns:
                 rows.append({
                     "model": model_name, "dim_A": d1, "dim_B": d2, "n_pairs": 0,
@@ -499,20 +484,7 @@ def run_metric(cfg: OutcomeConfig, scenario: str, metric_name: str, out_dir: Pat
 
 
 if __name__ == "__main__":
-    # ------------------------------------------------------------
-    # BINARY et SURVIVAL : 500/500 replicats confirmes complets sur les 15
-    # combinaisons dimension x scenario pour ces deux outcomes (verifie
-    # avant execution, y compris apres dedoublonnage de deux fichiers
-    # survie -- voir conversation).
-    #
-    # CONTINUOUS (ICIMTH) : PROVISOIRE -- rerun StandardScaler encore en
-    # cours au moment de l'execution (25%-100% des replicats selon la
-    # combinaison). Lance quand meme a la demande explicite de
-    # l'utilisateur pour produire une version rapide a envoyer au
-    # co-auteur ; le controle d'effectif (n_obs vs n_expected) declenche
-    # automatiquement un avertissement ATTENTION pour chaque combinaison
-    # incomplete. NE PAS CITER CES CHIFFRES COMME DEFINITIFS.
-    # ------------------------------------------------------------
+    # All three outcomes; each needs complete results under DQ_RESULTS_ROOT.
     for CFG in [BINARY, SURVIVAL, CONTINUOUS]:
         OUT_DIR = Path(f"./{CFG.name}_stats_results")
         for SCENARIO in ["S1", "S2", "S3"]:

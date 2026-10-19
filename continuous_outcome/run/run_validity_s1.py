@@ -6,7 +6,7 @@ ROOT_DIR = THIS_DIR.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from common_runner import run_scenario
-from Polluter.pollute_validity import pollution_validity
+from polluter.pollute_validity import pollution_validity
 
 CSV = str(ROOT_DIR / "data" / "18_variables.csv")
 OUT = ROOT_DIR /"Results" / "validity" / "outputs_validity_S1"

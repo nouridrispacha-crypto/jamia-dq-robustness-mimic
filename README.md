@@ -1,8 +1,8 @@
-# Data-Quality Defects Do Not Fail Clinical Machine Learning Equally
+# Data-Quality Defects Do Not Degrade Clinical Machine Learning Equally
 
 Companion code repository for the manuscript submitted to *JAMIA*:
 
-> **Data-Quality Defects Do Not Fail Clinical Machine Learning Equally: A Controlled Dimension-Wise Analysis on MIMIC-IV**
+> **Data-Quality Defects Do Not Degrade Clinical Machine Learning Equally: A Controlled Dimension-Wise Analysis on MIMIC-IV**
 
 This repository contains the corruption mechanisms, model training pipelines,
 and statistical analysis code used to produce every result reported in the
@@ -12,8 +12,8 @@ manuscript. It does **not** contain MIMIC-IV data or model outputs — see
 ## Overview
 
 The study independently degrades five data-quality (DQ) dimensions —
-**completeness, coherence, validity, precision, uniqueness** — at six
-corruption levels ($c = 0$ to $0.5$), under three scenarios (training-time,
+**completeness, coherence, validity, precision, uniqueness** — at four
+corruption levels ($c = 0$ to $0.3$), under three scenarios (training-time,
 test-time, joint), across three prediction tasks built on MIMIC-IV ICU
 admissions:
 
@@ -22,6 +22,13 @@ admissions:
 | Binary (in-hospital mortality) | `binary_outcome/` | `in_hospital_mortality` | LASSO, Decision Tree, Random Forest, XGBoost, MLP |
 | Continuous (ICU length of stay) | `continuous_outcome/` | `log_icu_los` | LASSO, Decision Tree, Random Forest, XGBoost, MLP |
 | Time-to-event (time to death) | `survival_outcome/` | `time_to_death` / `death_event` | CoxPH, Random Survival Forest, XGBoost-Cox, DeepSurv |
+
+Coherence is corrupted by swapping values within clinically linked variables
+(anion gap min/max, INR min/max, systolic/diastolic blood pressure, heart
+rate/respiratory rate, and two of the four vasopressor indicators). These
+rules can reach at most about 35% of predictor cells, so the corruption grid
+stops at $c = 0.3$ for every dimension, keeping coverage comparable across
+dimensions.
 
 Each outcome folder is self-contained and follows the same layout:
 
@@ -33,17 +40,17 @@ Each outcome folder is self-contained and follows the same layout:
 ```
 
 `analysis/analyse_stats.py` implements the revised statistical framework
-(Section 3.7 / Evaluation protocol of the manuscript): per-replicate paired
+(Statistical analysis section of the manuscript): per-replicate paired
 loss relative to the clean baseline, a linear mixed-effects model
 (`loss ~ dimension * model + level + dimension:level + (1|replicate)`), and
-Wilcoxon signed-rank contrasts with Holm correction, computed separately per
+Wilcoxon signed-rank contrasts with Holm correction at $c = 0.3$, computed separately per
 predictive model to avoid pooling non-independent (model, replicate) pairs.
 
 ## Reproducing the results
 
 1. **Get the data.** MIMIC-IV requires credentialed PhysioNet access (see
    [Data availability](#data-availability)). Extract the first-24h feature
-   set described in Section 3.1 of the manuscript and place it as
+   set described in the Data source section of the manuscript and place it as
    `<outcome>_outcome/data/<expected_filename>.csv` (see the `load_dataset`
    function in each `common_runner.py` for the exact expected filename and
    columns).
@@ -80,10 +87,11 @@ predictive model to avoid pooling non-independent (model, replicate) pairs.
 ## Scenario S2-MD (binary outcome only)
 
 `binary_outcome/run/run_s2md_mortality.py` runs the multi-dimension,
-budget-matched degradation scenario described in Section 3.6 of the
-manuscript (five weight profiles, including one derived from defect rates
-measured on a real clinical data warehouse). See the script's docstring for
-usage (`--smoke`, `--quick`, `--all` flags).
+budget-matched degradation scenario described in the manuscript. The
+manuscript reports the `P4_observe` profile, whose weights come from defect
+rates measured on an independent clinical data warehouse; it is the script's
+default. The other profiles (`--all`, or `-p <name>`) are exploratory. See the
+script's docstring for the `--smoke` and `--quick` flags.
 
 ## Data availability
 
@@ -97,6 +105,10 @@ study) are likewise not included in this repository.
 
 ## Repository notes
 
+- `common_runner.py` also fits models the manuscript does not report (for
+  example logistic regression, KNN, SVM and deeper MLP or DeepSurv variants).
+  Each model is fitted independently; removing them changed the reported
+  models' results by at most floating-point noise (below 2e-4).
 - Corruption mechanism parameters (noise scale factors, bias magnitudes,
   sentinel values, etc.) are documented exactly in Supplementary Table S3 of
   the manuscript, extracted directly from the `polluter/` scripts in this

@@ -5,7 +5,7 @@ THIS_DIR = Path(__file__).resolve().parent
 ROOT_DIR = THIS_DIR.parent
 sys.path.insert(0, str(ROOT_DIR))
 from common_runner import run_scenario
-from Polluter.pollute_precision import pollution_precision
+from polluter.pollute_precision import pollution_precision
 
 
 CSV = str(ROOT_DIR / "data" / "18_variables_reg.csv")

@@ -111,7 +111,9 @@ SENTINELS = {
 MISSING_TOKEN = "missing"
 
 SAMPLE_SIZES = [3500]
-POLLUTION_LEVELS = [0.0, 0.1, 0.2, 0.3, 0.4 , 0.5]
+# Grid capped at 0.3: coherence, confined to clinically linked variables,
+# reaches at most ~35% of predictor cells (see coherence_polluter.py).
+POLLUTION_LEVELS = [0.0, 0.1, 0.2, 0.3]
 N_BOOTSTRAPS = 500  # MODIFIÉ (temporaire) — 50 pour valider le fix StandardScaler
                     # avant de relancer les 500 replicats definitifs.
 

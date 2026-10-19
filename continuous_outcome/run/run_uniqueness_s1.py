@@ -6,7 +6,7 @@ ROOT_DIR = THIS_DIR.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from common_runner import run_scenario
-from Polluter.pollute_uniqueness import pollution_uniqueness
+from polluter.pollute_uniqueness import pollution_uniqueness
 
 CSV = str(ROOT_DIR / "data" / "18_variables.csv")
 OUT = ROOT_DIR /"Results" / "uniqueness"/ "outputs_uniqueness_S1"

@@ -2,12 +2,12 @@
 """
 Test du pollueur mixte S2-MD sur une cohorte synthetique de type MIMIC-IV.
 
-A placer dans Polluter/, a cote de pollute_mixed.py.
+A placer dans polluter/, a cote de pollute_mixed.py.
 
 USAGE
 -----
     cd chemin/vers/MIE_2026
-    python Polluter/test_mixed.py
+    python polluter/test_mixed.py
 
 Aucune donnee reelle n'est necessaire : la cohorte est simulee.
 Ce script ne verifie que la mecanique du pollueur (budget, disjonction,
@@ -100,10 +100,10 @@ def per_row_changes(df_before, df_after, cols):
 
 def run_checks():
     df = make_cohort(3500, seed=0)
-    fn = make_mixed_polluter(PROFILES["P0_uniform"], "P0_uniform")
+    fn = make_mixed_polluter(PROFILES["P4_observe"], "P4_observe")
 
     print("=" * 74)
-    print("TEST 1 — Taux global mesure vs cible (profil uniforme, N=3500)")
+    print("TEST 1 — Taux global mesure vs cible (profil P4_observe, N=3500)")
     print("=" * 74)
     print(f"{'T cible':>9} | {'T mesure':>9} | {'ecart':>7} | {'lignes':>7} | {'ordre':>6}")
     print("-" * 74)

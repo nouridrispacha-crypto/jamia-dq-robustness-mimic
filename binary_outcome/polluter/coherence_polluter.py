@@ -6,9 +6,23 @@ Compatible common_runner
 Règles de cohérence inter-variables :
 R1: aniongap_min  <-> aniongap_max
 R2: inr_min       <-> inr_max
-R3: sbp_mean      <-> dbp_min        (SBP / DBP inversés)
-R5: hr_mean       <-> rr_mean         (FC / FR inversées)
-R4: MISALIGN      (fallback) swap 2 colonnes numériques aléatoires
+R3: sbp_mean      <-> dbp_min         (SBP / DBP inverses)
+R5: hr_mean       <-> rr_mean         (FC / FR inversees)
+R6: permutation de deux des quatre indicateurs de vasopresseurs
+
+Chaque echange conserve les deux valeurs dans le domaine physiologique de leur
+nouvelle colonne : seule la relation entre variables est rompue, de sorte
+qu'un controle de plage colonne par colonne ne detecte rien.
+
+DEUX REGLES ONT ETE ECARTEES pour cette raison.
+R4 echangeait deux colonnes numeriques arbitraires (un debit urinaire de
+1726 mL pouvait atterrir dans la colonne SpO2) et fournissait environ deux
+tiers des cellules corrompues.
+R7 echangeait inr_min et ptt_min : moyennes 1.35 et 32.7, donc un INR a 33 et
+un PTT a 1.4, hors domaine dans les deux sens.
+
+Le jeu de regles restant plafonne a 34.8 % de couverture, d'ou
+POLLUTION_LEVELS arrete a 0.3.
 
 GARANTIES :
 - chaque cellule (row, col) est modifiée AU PLUS UNE FOIS
@@ -126,13 +140,18 @@ def apply_coherence_pollution_18vars(
     has_R2 = {"inr_min", "inr_max"} <= set(Xp.columns)
     has_R3 = {"sbp_mean", "dbp_min"} <= set(Xp.columns)
     has_R5 = {"hr_mean", "rr_mean"} <= set(Xp.columns)
+    VASO = [c for c in ("dobutamine", "dopamine", "norepinephrine",
+                        "phenylephrine") if c in Xp.columns]
+    has_R6 = len(VASO) >= 2
 
     rules = []
     if has_R1: rules.append("R1")
     if has_R2: rules.append("R2")
     if has_R3: rules.append("R3")
     if has_R5: rules.append("R5")
-    rules.append("R4")  # fallback obligatoire
+    if has_R6: rules.append("R6")
+    if not rules:
+        return Xp, np.array([], dtype=int), np.array([], dtype=int)
 
     while changed_cells < budget and attempts < max_attempts:
         attempts += 1
@@ -177,14 +196,15 @@ def apply_coherence_pollution_18vars(
                     Xp.columns.get_loc("rr_mean"),
                 ]
 
-        else:  # R4 fallback
-            nb = _misalign_swap(Xp, r, rng, num_cols, touched)
+        elif rule == "R6":
+            # wrong vasopressor recorded: permute two of the four indicators
+            c1, c2 = rng.choice(VASO, size=2, replace=False).tolist()
+            nb = _swap_if_free(Xp, r, c1, c2, touched)
             if nb:
-                c1, c2 = list(touched)[-2:]
                 row_idx += [r, r]
                 col_idx += [
-                    Xp.columns.get_loc(c1[1]),
-                    Xp.columns.get_loc(c2[1]),
+                    Xp.columns.get_loc(c1),
+                    Xp.columns.get_loc(c2),
                 ]
 
         changed_cells += nb
