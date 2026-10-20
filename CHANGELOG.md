@@ -39,9 +39,13 @@ Every binary figure, table and statistic in the manuscript now comes from this a
   writer. The October re-run recorded only the two co-primary metrics, which left
   Supplementary Figure 1 and three rows of Supplementary Table S5 on superseded data.
 - **Bootstrap .632 against .632+** (`standardisation/compare_632plus.py`).
-- **Preprocessing fitted in-bag only** (`standardisation/runner_noleak.py`), kept for a
-  reviewer response: the published pipeline fits `SEX_POOLS` and the preprocessor once
-  per cohort size.
+- **Preprocessing fitted in-bag only** (`standardisation/runner_noleak.py`), for a
+  reviewer response: the published pipeline fits `SEX_POOLS`, the encoder and the
+  standardisation constants once per cohort, before the bootstrap loop. `--compare 500`
+  writes `noleak_compare.csv`, the two arms paired replicate by replicate on the same
+  cohort, splits and seeds; `analysis/make_table_s11.py` turns it into Supplementary
+  Table S11. The AUROC verdicts of Table 3 are unchanged; one Brier least-damaging
+  verdict is not, and the table says so.
 
 ### Figure and table generators
 
@@ -60,6 +64,8 @@ None of these were in v1.0.0. Each produces a numbered figure or table of the ma
 | `analysis/analyse_stats_v2.py` | mixed models, contrasts, Tables 3, S5, S6 |
 | `analysis/compute_severity_table_S8.py` | Supplementary Table S8 |
 | `analysis/make_perf_tables.py` | performance tables |
+| `analysis/make_table_s6.py` | Supplementary Table S6 |
+| `analysis/make_table_s11.py` | Supplementary Table S11 |
 
 ### Corrections
 
