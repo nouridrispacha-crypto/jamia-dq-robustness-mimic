@@ -2,7 +2,7 @@
 """Supplementary Table S11: the preprocessing sensitivity, model by model and dimension
 by dimension.
 
-The published pipeline fits the hot-deck donor pools, the one-hot encoder and the
+The original pipeline fits the hot-deck donor pools, the one-hot encoder and the
 standardisation constants once per cohort, before the bootstrap loop, so the out-of-bag
 predictor distribution takes part in building the preprocessing that is then applied to
 it. runner_noleak.py repeats Scenario S2 at c = 0.3 with all three refitted inside every
@@ -200,7 +200,7 @@ def _rank_sentence():
                WORD[len({s["model"] for s in sw})])]
     for s in real:
         out.append("For {} the degradation at {} changes, {} giving way to {}, a mean Brier "
-                   "score ${:.3f}$ apart as published and ${:.3f}$ apart when refitted; this "
+                   "score ${:.3f}$ apart in the primary analysis and ${:.3f}$ apart when refitted; this "
                    "is the one verdict change recorded below.".format(
                        MNAME[s["model"]], _place(s), s["lost"], s["won"],
                        s["gap_pub"], s["gap_nl"]))
@@ -224,7 +224,7 @@ rank_note = _rank_sentence()
 if changed:
     mlabel, kind, was, now = changed[0]
     note = ("One verdict does not hold: among the {} damaging degradations in the {}, {} "
-            "under the published pipeline and {} when the preprocessing is refitted in-bag "
+            "under the original pipeline and {} when the preprocessing is refitted in-bag "
             "only. Every most-damaging verdict is unchanged, in both metrics and both "
             "families.".format(kind, mlabel, was.lower(), now.lower()))
 else:
@@ -234,7 +234,7 @@ assert len(changed) == 1, [c[:2] for c in changed]
 tex = r"""\phantomsection\label{supp:tabS11}
 \subsection*{Supplementary Table S11. Preprocessing fitted on the in-bag sample alone}
 
-The published pipeline builds the sex-conditioned donor pools, the one-hot encoder and the
+The original pipeline builds the sex-conditioned donor pools, the one-hot encoder and the
 standardisation constants once per cohort, before the bootstrap loop, and applies them to
 both the in-bag and the out-of-bag set; the out-of-bag predictor distribution therefore
 takes part in building the preprocessing applied to it. This analysis repeats Scenario S2
@@ -251,9 +251,10 @@ Table~\ref{tab:contrasts} uses: a degradation is named when the rule holds for e
 
 \begin{table}[htbp]
 \caption*{Supplementary Table S11. Scenario S2 at $c=0.3$ ($N=3\,500$, 500 bootstrap
-replicates) with the preprocessing fitted once on the cohort, as published, and refitted
+replicates) with the preprocessing fitted once on the cohort, as in the primary
+analysis, and refitted
 on the in-bag sample alone. Entries are means; the difference is the in-bag-only arm minus
-the published one.}
+the original one.}
 \label{tab:noleak}
 \centering
 \singlespacing
@@ -264,7 +265,7 @@ the published one.}
                 ccc|ccc}
     \toprule
     & & \multicolumn{3}{c|}{AUROC} & \multicolumn{3}{c}{Brier score} \\
-    Model & Dimension & Published & In-bag & Difference & Published & In-bag & Difference \\
+    Model & Dimension & Original & In-bag & Difference & Original & In-bag & Difference \\
     \midrule
 BODY
     \bottomrule
@@ -286,7 +287,7 @@ recomputed on each arm.}
                 >{\raggedright\arraybackslash}p{4.6cm}
                 >{\raggedright\arraybackslash}p{1.6cm}}
     \toprule
-    Metric & Rule & Published & In-bag only & Comparison \\
+    Metric & Rule & Original & In-bag only & Comparison \\
     \midrule
 VERDICTS
     \bottomrule
