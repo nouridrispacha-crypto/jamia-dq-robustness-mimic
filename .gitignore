@@ -1,16 +1,11 @@
-# Data (not redistributed -- see README for access instructions)
-data/
-Results/
-results/
-*.csv
-*.parquet
-*.log
+# Chemins propres a une machine : jamais publies.
+paths_local.py
 
-# Python
+# Sorties
 __pycache__/
 *.pyc
-.ipynb_checkpoints/
-
-# OS
-.DS_Store
-Thumbs.db
+*.log
+logs/
+stats_results/
+results/
+data/

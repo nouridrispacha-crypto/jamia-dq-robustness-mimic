@@ -1,162 +1,94 @@
-# Data-Quality Defects Do Not Degrade Clinical Machine Learning Equally
+# Data-quality degradation and clinical ML robustness in MIMIC-IV
 
-Companion code repository for the manuscript submitted to *JAMIA*:
+Code for the paper. Five data-quality dimensions are degraded in a controlled way, under
+three scenarios, and the loss is measured on three prediction tasks: in-hospital mortality
+(binary), ICU length of stay (continuous) and time to death (censored).
 
-> **Data-Quality Defects Do Not Degrade Clinical Machine Learning Equally: A Controlled Dimension-Wise Analysis on MIMIC-IV**
+The MIMIC-IV extractions are not redistributable. Rebuild them from MIMIC-IV, then point the
+code at them as described below.
 
-This repository contains the corruption mechanisms, model training pipelines,
-and statistical analysis code used to produce every result reported in the
-manuscript. It does **not** contain MIMIC-IV data or model outputs — see
-[Data availability](#data-availability) below.
-
-## Overview
-
-The study independently degrades five data-quality (DQ) dimensions —
-**completeness, coherence, validity, precision, uniqueness** — at four
-corruption levels ($c = 0$ to $0.3$), under three scenarios (training-time,
-test-time, joint), across three prediction tasks built on MIMIC-IV ICU
-admissions:
-
-| Outcome | Folder | Target | Models |
-|---|---|---|---|
-| Binary (in-hospital mortality) | `binary_outcome/` | `in_hospital_mortality` | LASSO, Decision Tree, Random Forest, XGBoost, MLP |
-| Continuous (ICU length of stay) | `continuous_outcome/` | `log_icu_los` | LASSO, Decision Tree, Random Forest, XGBoost, MLP |
-| Time-to-event (time to death) | `survival_outcome/` | `time_to_death` / `death_event` | CoxPH, Random Survival Forest, XGBoost-Cox, DeepSurv |
-
-Coherence is corrupted by swapping values within clinically linked variables
-(anion gap min/max, INR min/max, systolic/diastolic blood pressure, heart
-rate/respiratory rate, and two of the four vasopressor indicators). These
-rules can reach at most about 35% of predictor cells, so the corruption grid
-stops at $c = 0.3$ for every dimension, keeping coverage comparable across
-dimensions.
-
-Each outcome folder is self-contained and follows the same layout:
+## Where things live
 
 ```
-<outcome>_outcome/
-├── common_runner.py   # shared pipeline: imputation, corruption, bootstrap .632, model training, metrics
-├── polluter/           # one script per DQ dimension, plus pollute_mixed.py for the multi-dimension scenario (S2-MD, binary only)
-└── run/                # one entry-point script per (dimension, scenario) combination
+config.py            every path, resolved once
+simulate/            the degradation and fitting pipeline, one directory per outcome
+  polluter/            the five degradation mechanisms
+  run/                 one entry point per (dimension, scenario)
+  standardised/        the binary arm refitted with predictor standardisation
+  s2md/                the composite scenario weighted by observed defect rates
+analyse/             the mixed model, the paired contrasts and the separability rule
+report/              one script per table and per figure of the paper
+verify/              recomputes the paper's numbers from the results and checks the text
 ```
 
-`analysis/analyse_stats.py` implements the revised statistical framework
-(Statistical analysis section of the manuscript): per-replicate paired
-loss relative to the clean baseline, a linear mixed-effects model
-(`loss ~ dimension * model + level + dimension:level + (1|replicate)`), and
-Wilcoxon signed-rank contrasts with Holm correction at $c = 0.3$, computed separately per
-predictive model to avoid pooling non-independent (model, replicate) pairs.
+## Paths
 
-## Reproducing the results
+Nothing is hard-coded. `config.py` resolves each location from, in order: an environment
+variable, a `paths_local.py` beside it, then a default under the repository.
 
-1. **Get the data.** MIMIC-IV requires credentialed PhysioNet access (see
-   [Data availability](#data-availability)). Extract the first-24h feature
-   set described in the Data source section of the manuscript and place it as
-   `<outcome>_outcome/data/<expected_filename>.csv` (see the `load_dataset`
-   function in each `common_runner.py` for the exact expected filename and
-   columns).
+Copy `paths_local.example.py` to `paths_local.py` and fill it in. That file is not
+version-controlled, because where the data sits on one machine is of no use on another.
 
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+| name | what it points at |
+|---|---|
+| `DQ_PAPER` | the directory holding `manuscript.tex` and `img/` |
+| `DQ_DATA` | the MIMIC-IV extractions |
+| `DQ_BINARY_RESULTS`, `DQ_BINARY_RESULTS_RERUN` | binary simulation output |
+| `DQ_CONTINUOUS_RESULTS`, `DQ_CONTINUOUS_RESULTS_RERUN` | continuous simulation output |
+| `DQ_SURVIVAL_RESULTS` | survival simulation output |
+| `DQ_SCALED_INPUTS` | the standardised binary inputs |
 
-3. **Run one (dimension, scenario) combination**, e.g. coherence under
-   test-time degradation for the binary outcome:
-   ```bash
-   cd binary_outcome
-   python run/run_coherence_s2.py
-   ```
-   Each script writes `Results/<Dimension>/outputs_<dimension>_<scenario>/<scenario>.csv`,
-   resumable if interrupted (already-completed bootstrap replicates are
-   detected and skipped). Running the full study is 5 dimensions × 3
-   scenarios × 3 outcomes × 500 bootstrap replicates and is computationally
-   substantial (single dimension/scenario/outcome combinations took on the
-   order of hours to a day on the development machine).
+Two roots per outcome is not an accident: some dimensions were refitted later, and the file
+maps in `analyse/analyse_stats_v2.py` say which come from where.
 
-4. **Run the statistical analysis**, once results exist:
-   ```bash
-   cd analysis
-   export DQ_RESULTS_ROOT=/path/to/where/the/three/Results/folders/live
-   python analyse_stats.py
-   ```
-   Edit the `__main__` block to select which outcome(s)/scenario(s) to
-   analyze. Outputs (loss tables, mixed-model summaries, ICC, residual
-   diagnostics, Wilcoxon+Holm contrast tables) are written to
-   `<outcome>_stats_results/`.
+## Reproducing, in order
 
-## Scenario S2-MD (binary outcome only)
+1. **Cohorts.** Rebuild the extractions from MIMIC-IV. The survival outcome runs from ICU
+   admission to a fixed horizon at day 90, with a 24-hour landmark: a death recorded within
+   the horizon is an event, every other patient is censored at day 90, and patients who died
+   within the first 24 hours are excluded. The horizon is supportable because the extraction
+   ascertains deaths to 90 days after hospital discharge, and discharge never precedes
+   admission.
 
-`binary_outcome/run/run_s2md_mortality.py` runs the multi-dimension,
-budget-matched degradation scenario described in the manuscript. The
-manuscript reports the `P4_observe` profile, whose weights come from defect
-rates measured on an independent clinical data warehouse; it is the script's
-default. The other profiles (`--all`, or `-p <name>`) are exploratory. See the
-script's docstring for the `--smoke` and `--quick` flags.
+2. **Simulate.** Run the entry points under `simulate/<outcome>/run/`, one per dimension and
+   scenario. Each writes one CSV per cell and resumes where it stopped, so interrupting costs
+   only the replicate in flight. Thread counts are set inside each runner; with several
+   processes in parallel, keep processes x threads near the core count.
 
-## Data availability
+3. **Standardised binary arm.** `simulate/standardised/build_scaled_inputs.py` then
+   `runner_scale.py`. The paper's binary results are this arm.
 
-MIMIC-IV is a credentialed-access database; this repository cannot
-redistribute it or any data derived from it. Access requires completing
-PhysioNet's required human-subjects training and signing the data use
-agreement: <https://physionet.org/content/mimiciv/>.
+4. **Analyse.** `analyse/analyse_stats.py` fits
+   `loss ~ dimension*model + level + dimension:level + (1|replicate)` on corruption levels
+   0.1 to 0.3 and writes the paired contrasts at c=0.3, Holm-corrected within the ten pairs
+   of each model.
 
-Model outputs (bootstrap-replicate-level CSVs, ~GB scale across the full
-study) are likewise not included in this repository.
+5. **Report.** The scripts in `report/` write the tables and figures and splice them into the
+   manuscript. Each one guards what it must not change: the table scripts refuse to write if
+   a cell outside their remit moves.
 
-## Repository notes
+6. **Verify.** `verify/verify_all.py` recomputes the survival column of Supplementary
+   Table S6, the residual skewness of Supplementary Table S5 and every counting claim in the
+   Results from the result files, checks that no text from a superseded design survives, and
+   confirms each figure is newer than the data it is drawn from.
 
-- `common_runner.py` also fits models the manuscript does not report (for
-  example logistic regression, KNN, SVM and deeper MLP or DeepSurv variants).
-  Each model is fitted independently; removing them changed the reported
-  models' results by at most floating-point noise (below 2e-4).
-- Corruption mechanism parameters (noise scale factors, bias magnitudes,
-  sentinel values, etc.) are documented exactly in Supplementary Table S3 of
-  the manuscript, extracted directly from the `polluter/` scripts in this
-  repository.
-- Some `run/` scripts predate the final (dimension, scenario)-suffixed
-  naming convention (e.g. `run_coherence.py` alongside
-  `run_coherence_s1.py`/`_s2.py`/`_s3.py`) and were superseded during
-  development; the manuscript's reported results come from the
-  scenario-suffixed scripts. These legacy scripts are kept for transparency
-  but are not needed to reproduce the manuscript.
-- File paths in `common_runner.py` and `analysis/analyse_stats.py` were adapted
-  for this public repository (relative paths / the `DQ_RESULTS_ROOT` environment
-  variable) from the absolute paths used on the development machine; no
-  computational logic was changed. The scripts under `figures/` and
-  `standardisation/`, added in v2.0.0, still carry those absolute paths: running
-  them elsewhere means editing the `PAPER = Path(...)` line at the top of each.
-  They were left as they ran, so that the published figures and the archived code
-  are the same code.
+## The separability rule
 
-## Figures and tables
+A degradation is called most damaging, for a given model, when it is reliably separable from
+at least one other (Holm-adjusted p < 0.05 within the ten pairs of that model, and a
+2.5th-97.5th percentile interval of the paired differences excluding zero), never on the less
+damaging side, and costs more than the mean of the other four. Least damaging is the reverse.
+A cell names a degradation with "all" when this holds for every model, otherwise with the
+family for which it holds throughout.
 
-| script | output |
-| --- | --- |
-| `figures/figure1_protocol.py` | Figure 1 |
-| `figures/make_s2md_schema.py` | Figure 2 (schematic) |
-| `figures/make_print_figures.py` | Figures 2 and 5, Supplementary Figures 1 to 4 |
-| `figures/make_supp_heatmaps.py` | Figure 3, Supplementary Figures 6 and 7 |
-| `figures/make_s2_grid.py` | Figure 4, Supplementary Figures 2 and 3 grids |
-| `figures/make_contrast_figure.py` | Supplementary Figures 8 to 10 |
-| `figures/make_contrast_table.py` | Table 3 |
-| `figures/make_resid_figures.py` | Supplementary Figure 5 |
-| `analysis/analyse_stats_v2.py` | mixed models, contrasts, Tables 3, S5 and S6 |
-| `analysis/compute_severity_table_S8.py` | Supplementary Table S8 |
+The rule is not a ranking by mean loss. A degradation with a larger mean loss can fail to
+qualify when its effect varies more across replicates, and two degradations that are not
+separable from each other can both qualify.
 
-The binary arm was re-run with the predictors standardised, because its
-preprocessor passed them through where the continuous and survival arms already
-scaled them. Clean AUROC moves from 0.7444 to 0.8224 for the MLP and by -0.002
-for LASSO; the tree models are invariant to a per-column affine map. Every binary
-figure, table and statistic in the manuscript comes from that arm, produced by
-the scripts under `standardisation/`. See [CHANGELOG.md](CHANGELOG.md).
+## Requirements
 
-## Citation
+`pip install -r requirements.txt`. The versions there are the ones the paper ran on.
 
-If you use this code, please cite the manuscript (full citation to be added
-on acceptance) and the archived release of this repository:
+## Licence
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23496171.svg)](https://doi.org/10.5281/zenodo.23496171)
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+See `LICENSE`.
