@@ -29,6 +29,11 @@ import pandas as pd
 warnings.filterwarnings("ignore")
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+# Le bras brut est le pipeline binaire publie, sans copie locale.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'binary'))
+# Les cinq mecanismes de degradation sont partages entre les issues : ils
+# sont identiques, et une copie par issue laissait croire le contraire.
+sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE / "polluter"))
 
 import common_runner as CR

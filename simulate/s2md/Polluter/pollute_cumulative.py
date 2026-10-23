@@ -54,6 +54,8 @@ import pandas as pd
 _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
+import os.path as _op
+sys.path.insert(0, _op.join(_op.dirname(_op.dirname(_HERE)), 'polluter'))
 
 from pollute_uniqueness import pollution_uniqueness                       # noqa: E402
 from coherence_polluter import apply_coherence_pollution_18vars           # noqa: E402

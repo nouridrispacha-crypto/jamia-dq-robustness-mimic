@@ -6,6 +6,9 @@ ROOT_DIR = THIS_DIR.parent
 POLLUTER_DIR = ROOT_DIR / "polluter"
 
 sys.path.insert(0, str(ROOT_DIR))
+# Les cinq mecanismes de degradation sont partages entre les issues : ils sont
+# identiques, et une copie par issue laissait croire le contraire.
+sys.path.insert(0, str(ROOT_DIR.parent))
 sys.path.insert(0, str(POLLUTER_DIR))
 
 

@@ -28,6 +28,23 @@ since it passes through the censoring distribution and the integration grid whil
 depends only on the ordering of event times. Coherence, whose only lead was the survival
 Integrated Brier Score among tree-based models, now leads nowhere.
 
+### Duplicates removed
+
+The five degradation mechanisms were byte-identical in all five places they appeared, so
+twenty of the twenty-five files were copies. They now live once, in `simulate/polluter/`,
+shared by the three outcomes. The duplication was not only waste: five polluter directories
+invited the reader to believe the mechanisms differ per outcome, and they do not.
+
+`simulate/standardised/common_runner.py` was byte-identical to the binary one. It is the raw
+pipeline that `runner_scale` compares its scaled arm against, which is right, but it did not
+need to be a second copy.
+
+`make_perf_tables.py` wrote "Supplementary Tables S9–S17", a series the supplement no longer
+has and the manuscript never references.
+
+Each of the 48 scripts that import a mechanism was redirected and then imported for real, to
+prove the import resolves rather than assume it. 115 scripts become 93.
+
 ### Repository pruned
 
 Thirteen one-off repair scripts removed. They recorded how results were patched into shape

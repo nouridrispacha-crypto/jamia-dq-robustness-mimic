@@ -55,6 +55,11 @@ maps in `analyse/analyse_stats_v2.py` say which come from where.
    only the replicate in flight. Thread counts are set inside each runner; with several
    processes in parallel, keep processes x threads near the core count.
 
+   Each runner writes under its own outcome directory, so point the matching
+   `DQ_*_RESULTS` at where it wrote. The five degradation mechanisms live once, in
+   `simulate/polluter/`, and are shared by the three outcomes: they are identical, and a
+   copy per outcome invited the reader to think otherwise.
+
 3. **Standardised binary arm.** `simulate/standardised/build_scaled_inputs.py` then
    `runner_scale.py`. The paper's binary results are this arm.
 
